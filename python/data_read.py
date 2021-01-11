@@ -12,9 +12,8 @@ ser.timeout = 1
 if ser.isOpen():
     ser.close()
 ser.open()
-while True:
+while ser.inWaiting() > 0:
     line = ser.readline()
     print(line)
-    time.sleep(0.05)
-    if line == b'':
-        break
+    time.sleep(0.05)   
+ser.close()
