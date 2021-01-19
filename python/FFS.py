@@ -24,7 +24,7 @@ class FFS:
         self.start_visualization()
 
     def start_acquisition(self):
-        # self.data_read = data_read.DataRead()
+        self.data_read = data_read.DataRead()
         self.acquisitionThread = threading.Thread(target=self.acquisition)
         self.acquisitionThread.start()
         logging.info('Acquisition started')
@@ -32,7 +32,7 @@ class FFS:
     def acquisition(self):
         while(True):
             self.lock.acquire()
-            # self.data = self.data_read.get_data()
+            self.data = self.data_read.get_data()
             self.gyroscope[0] += random.randint(-10, 10)
             self.gyroscope[1] += random.randint(-10, 10)
             self.gyroscope[2] += random.randint(-10, 10)
