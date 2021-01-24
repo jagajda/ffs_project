@@ -1,4 +1,4 @@
-# This is a multithread program for data acquisition, filtration and visualization
+
 import threading
 import _thread
 import logging
@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import time
 
+import magdwickahrs as mdw
 # For fake data generation
 import random
 
@@ -18,9 +19,10 @@ class FFS:
         self.data = {}
         self.gyroscope = [0, 0, 0]
         self.sleep = sleep
+        self.filtr = mdw.MadgwickAHRS(sampleperiod=0.05, quaternion=None, beta=None)
 
         self.start_acquisition()
-        # self.start_filtration()
+        self.start_filtration()
         self.start_visualization()
 
     def start_acquisition(self):
@@ -32,10 +34,13 @@ class FFS:
     def acquisition(self):
         while(True):
             self.lock.acquire()
+#            self.data = {'ACC0': [random.randrange(1000), random.randrange(1000), random.randrange(1000)],
+#                    'GYRO': [random.randrange(1000), random.randrange(1000), random.randrange(1000)],
+#                    'MAG': [random.randrange(1000), random.randrange(1000), random.randrange(1000)] }
             self.data = self.data_read.get_data()
-            self.gyroscope[0] += random.randint(-10, 10)
-            self.gyroscope[1] += random.randint(-10, 10)
-            self.gyroscope[2] += random.randint(-10, 10)
+            #self.gyroscope[0] += random.randint(-10, 10)
+            #self.gyroscope[1] += random.randint(-10, 10)
+            #self.gyroscope[2] += random.randint(-10, 10)
             self.lock.release()
             logging.debug(self.gyroscope)
             time.sleep(self.sleep)
@@ -47,8 +52,12 @@ class FFS:
 
 
     def filtration(self):
-        # TODO
-        pass
+        self.lock.acquire()
+        self.filtr.update(self.data['ACC0'],self.data['GYRO'],self.data['MAG'])
+        ahrs = self.filtr.quaternion.to_euler_angles()
+        #ahrs = self.filtr.quaternion.to_angle_axis()
+        self.gyroscope = list(ahrs)
+        self.lock.release()
 
     def start_visualization(self):
         self.visualizationThread = threading.Thread(target=self.visualization)
