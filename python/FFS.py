@@ -19,7 +19,7 @@ class FFS:
         self.data = {}
         self.gyroscope = [0, 0, 0]
         self.sleep = sleep
-        self.filtr = mdw.MadgwickAHRS(sampleperiod=0.05, quaternion=None, beta=None)
+        self.filtr = mdw.MadgwickAHRS(sampleperiod=sleep, quaternion=None, beta=None, zeta=None)
 
         self.start_acquisition()
         self.start_filtration()
