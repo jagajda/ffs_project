@@ -65,11 +65,13 @@ class FFS:
 
     def visualization(self):
         fig = plt.figure()
-        ax = fig.add_subplot(111, projection='3d')
-        self.plotThread = _thread.start_new_thread(self.plotting, (fig, ax))
+        started_time = time.time()
+        ax_1 = fig.add_subplot(111, projection='3d')
+        fig_2, ax_2 = plt.subplots()
+        self.plotThread = _thread.start_new_thread(self.plotting, fig, ax_1, fig_2, ax_2, started_time)
         plt.show()
 
-    def plotting(self, fig, ax):
+    def plotting(self, fig, ax, fig_2, ax_2, started_time):
         logging.info('Plotting started')
         unit_vectors = np.eye(3)
         vec_zeros = np.zeros(3)
@@ -98,8 +100,15 @@ class FFS:
             ax.set_zticks([-1, 0, 1])
             ax.set_yticks([-1, 0, 1])
             ax.set_xticks([-1, 0, 1])
+
             fig.canvas.draw_idle()  # use draw_idle instead of draw
 
+            # 2nd plot
+            elapsed_time = started_time - time.time()
+            for gyro_ax, color_ in zip(gyroscope, colors_xyz):
+                ax_2.plot(elapsed_time, np.degrees(gyro_ax), '.', color=color_)
+
+            fig_2.canvas.draw_idle()  # use draw_idle instead of draw
             time.sleep(self.sleep)
 
     @staticmethod
