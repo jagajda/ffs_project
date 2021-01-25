@@ -106,7 +106,7 @@ class FFS:
             # 2nd plot
             elapsed_time = started_time - time.time()
             for gyro_ax, color_ in zip(gyroscope, colors_xyz):
-                ax_2.plot(elapsed_time, gyro_ax, '.', color=color_)
+                ax_2.plot(elapsed_time, np.degrees(gyro_ax), '.', color=color_)
 
             fig_2.canvas.draw_idle()  # use draw_idle instead of draw
             time.sleep(self.sleep)
