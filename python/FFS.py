@@ -64,14 +64,25 @@ class FFS:
         logging.info('Visualizations started')
 
     def visualization(self):
+
+        self.start_plottinng_position()
+        self.start_plotting_angles()
+
+
+    def start_plottinng_position(self):
         fig = plt.figure()
-        started_time = time.time()
         ax_1 = fig.add_subplot(111, projection='3d')
-        fig_2, ax_2 = plt.subplots()
-        self.plotThread = _thread.start_new_thread(self.plotting, fig, ax_1, fig_2, ax_2, started_time)
+        self.plotThread = _thread.start_new_thread(self.plotting, (fig, ax_1))
         plt.show()
 
-    def plotting(self, fig, ax, fig_2, ax_2, started_time):
+    def start_plotting_angles(self):
+        fig, ax = plt.subplot()
+        start_time = time.time()
+
+        self.plotThread_2 = _thread.start_new_thread(self.plotting_angles_time, (fig, ax, start_time))
+        plt.show()
+
+    def plotting(self, fig, ax):
         logging.info('Plotting started')
         unit_vectors = np.eye(3)
         vec_zeros = np.zeros(3)
@@ -102,13 +113,23 @@ class FFS:
             ax.set_xticks([-1, 0, 1])
 
             fig.canvas.draw_idle()  # use draw_idle instead of draw
+            time.sleep(self.sleep)
 
-            # 2nd plot
+    def plotting_angles_time(self, fig, ax, started_time):
+        colors_xyz = ['r', 'g', 'b']
+
+        while True:
+            self.lock.acquire()
+            gyroscope = self.gyroscope
+            self.lock.release()
+            logging.debug(gyroscope)
+            ax.clear()
+
             elapsed_time = started_time - time.time()
             for gyro_ax, color_ in zip(gyroscope, colors_xyz):
-                ax_2.plot(elapsed_time, np.degrees(gyro_ax), '.', color=color_)
+                ax.plot(elapsed_time, np.degrees(gyro_ax), '.-', color=color_)
 
-            fig_2.canvas.draw_idle()  # use draw_idle instead of draw
+            fig.canvas.draw_idle()  # use draw_idle instead of draw
             time.sleep(self.sleep)
 
     @staticmethod
