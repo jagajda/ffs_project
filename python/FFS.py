@@ -8,8 +8,8 @@ import math as m
 import numpy as np
 
 import magdwickahrs as mdw
-# For fake data generation
-import random
+
+from quaternion import Quaternion
 
 import data_read
 
@@ -20,7 +20,10 @@ class FFS:
         self.data = {}
         self.gyroscope = [0, 0, 0]
         self.sleep = sleep
-        self.filtr = mdw.MadgwickAHRS(sampleperiod=sleep, quaternion=None, beta=None, zeta=None)
+        self.data_read = data_read.DataRead()
+        self.data_read.calculate_beta_zeta()
+        self.sleep = sleep
+        self.filtr = mdw.MadgwickAHRS(sampleperiod=sleep, quaternion=Quaternion(1, 0, 0, 0), beta=self.data_read.beta, zeta=self.data_read.zeta)
 
         self.start_acquisition()
         self.start_filtration()
@@ -35,13 +38,7 @@ class FFS:
     def acquisition(self):
         while (True):
             self.lock.acquire()
-            #            self.data = {'ACC0': [random.randrange(1000), random.randrange(1000), random.randrange(1000)],
-            #                    'GYRO': [random.randrange(1000), random.randrange(1000), random.randrange(1000)],
-            #                    'MAG': [random.randrange(1000), random.randrange(1000), random.randrange(1000)] }
             self.data = self.data_read.get_data()
-            # self.gyroscope[0] += random.randint(-10, 10)
-            # self.gyroscope[1] += random.randint(-10, 10)
-            # self.gyroscope[2] += random.randint(-10, 10)
             self.lock.release()
             logging.debug(self.gyroscope)
             time.sleep(self.sleep)
@@ -52,12 +49,14 @@ class FFS:
         logging.info('Filtration started')
 
     def filtration(self):
-        self.lock.acquire()
-        self.filtr.update(self.data['ACC0'], self.data['GYRO'], self.data['MAG'])
-        ahrs = self.filtr.quaternion.to_euler_angles()
-        # ahrs = self.filtr.quaternion.to_angle_axis()
-        self.gyroscope = list(ahrs)
-        self.lock.release()
+        while (True):
+            self.lock.acquire()
+            self.filtr.update(self.data['ACC0'], self.data['GYRO'], self.data['MAG'])
+            ahrs = self.filtr.quaternion.to_euler_angles()
+            #ahrs = self.filtr.quaternion.to_angle_axis()
+            self.gyroscope = list(ahrs)
+            self.lock.release()
+            time.sleep(self.sleep)
 
     def start_visualization(self):
         self.visualizationThread = threading.Thread(target=self.visualization)
@@ -84,7 +83,6 @@ class FFS:
 
             # note: calculate  rotation matrix
             R = self._Rz(gyroscope[0]) * self._Ry(gyroscope[1]) * self._Rx(gyroscope[2])
-
             ax.quiver(vec_zeros, vec_zeros, vec_zeros, unit_vectors[0], unit_vectors[1], unit_vectors[2], color='grey',
                       linestyle='--')
             for u_vec in unit_vectors:

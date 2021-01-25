@@ -56,24 +56,20 @@ class DataRead:
     def read_data(self):
         self.ser.open()
         line = self.ser.readline()
-        print('Reading data, read line:')
-        print(line)
         sensors = line.split(b';')
-        #self.lock.acquire()
-        while self.ser.in_waiting > 0:
-            self.ACC0_X = int(sensors[0].split(b',')[0].strip(b' '))
-            self.ACC0_Y = int(sensors[0].split(b',')[1].strip(b' '))
-            self.ACC0_Z = int(sensors[0].split(b',')[2].strip(b' '))
-            self.GYRO_X = int(sensors[1].split(b',')[0].strip(b' '))
-            self.GYRO_Y = int(sensors[1].split(b',')[1].strip(b' '))
-            self.GYRO_Z = int(sensors[1].split(b',')[2].strip(b' '))
-            self.ACC1_X = int(sensors[2].split(b',')[0].strip(b' '))
-            self.ACC1_Y = int(sensors[2].split(b',')[1].strip(b' '))
-            self.ACC1_Z = int(sensors[2].split(b',')[2].strip(b' '))
-            self.MAG_X = int(sensors[3].split(b',')[0].strip(b' '))
-            self.MAG_Y = int(sensors[3].split(b',')[1].strip(b' '))
-            self.MAG_Z = int(sensors[3].split(b',')[2].strip(b' '))
-        #self.lock.release()
+        #while self.ser.in_waiting > 0:
+        self.ACC0_X = int(sensors[0].split(b',')[0].strip(b' '))
+        self.ACC0_Y = int(sensors[0].split(b',')[1].strip(b' '))
+        self.ACC0_Z = int(sensors[0].split(b',')[2].strip(b' '))
+        self.GYRO_X = int(sensors[1].split(b',')[0].strip(b' '))
+        self.GYRO_Y = int(sensors[1].split(b',')[1].strip(b' '))
+        self.GYRO_Z = int(sensors[1].split(b',')[2].strip(b' '))
+        self.ACC1_X = int(sensors[2].split(b',')[0].strip(b' '))
+        self.ACC1_Y = int(sensors[2].split(b',')[1].strip(b' '))
+        self.ACC1_Z = int(sensors[2].split(b',')[2].strip(b' '))
+        self.MAG_X = int(sensors[3].split(b',')[0].strip(b' '))
+        self.MAG_Y = int(sensors[3].split(b',')[1].strip(b' '))
+        self.MAG_Z = int(sensors[3].split(b',')[2].strip(b' '))
         time.sleep(0.05)   
         self.ser.close()
 
@@ -113,6 +109,12 @@ class DataRead:
         self.MAG_X = self.MAG_X / 1000  #value in [gauss]
         self.MAG_Y = self.MAG_Y / 1000  #value in [gauss]
         self.MAG_Z = self.MAG_Z / 1000  #value in [gauss]
+        
+    def calculate_beta_zeta(self):
+        gyro = np.array(GYRO_OFFSET)
+        gyro_error = np.square(np.sum(gyro**2))
+        self.beta = np.square(3.0 / 4.0) * gyro_error
+        self.zeta = np.square(3.0 / 4.0) * gyro_error / 50
         
     def run(self):
         if ser.isOpen():
