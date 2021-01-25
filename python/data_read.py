@@ -6,7 +6,7 @@ import numpy as np
 CALIBRATION = True
 
 ACC_OFFSET = [-16, -38, 34]   # [mg]
-GYRO_OFFSET = [0.112, -3.368, 2.108]    # [dps]
+GYRO_OFFSET = [0.112, -3.368, 2.108]    # [mdps]
 MAG_OFFSET = [7, 1, -363] # [mgauss]
 MAG_COEFFS = [[1.206, 0.093, 0.025],
               [0.093, 1.214, -0.005],
@@ -56,6 +56,7 @@ class DataRead:
     def read_data(self):
         self.ser.open()
         line = self.ser.readline()
+        print(line)
         sensors = line.split(b';')
         #while self.ser.in_waiting > 0:
         self.ACC0_X = int(sensors[0].split(b',')[0].strip(b' '))
@@ -69,8 +70,7 @@ class DataRead:
         self.ACC1_Z = int(sensors[2].split(b',')[2].strip(b' '))
         self.MAG_X = int(sensors[3].split(b',')[0].strip(b' '))
         self.MAG_Y = int(sensors[3].split(b',')[1].strip(b' '))
-        self.MAG_Z = int(sensors[3].split(b',')[2].strip(b' '))
-        time.sleep(0.05)   
+        self.MAG_Z = int(sensors[3].split(b',')[2].strip(b' '))  
         self.ser.close()
 
     def calibrate_data(self):
@@ -80,9 +80,9 @@ class DataRead:
         self.ACC0_Z = self.ACC0_Z - ACC_OFFSET[2]
         
         # Gyroscope calibration
-        self.GYRO_X = self.GYRO_X - GYRO_OFFSET[0]
-        self.GYRO_Y = self.GYRO_Y - GYRO_OFFSET[1]
-        self.GYRO_Z = self.GYRO_Z - GYRO_OFFSET[2]
+        self.GYRO_X = self.GYRO_X - GYRO_OFFSET[0] * 1000
+        self.GYRO_Y = self.GYRO_Y - GYRO_OFFSET[1] * 1000
+        self.GYRO_Z = self.GYRO_Z - GYRO_OFFSET[2] * 1000
         
         # Magnetometer calibration
         mag_uncal = np.array([self.MAG_X, self.MAG_Y, self.MAG_Z])
@@ -98,9 +98,9 @@ class DataRead:
         self.ACC0_Y = self.ACC0_Y / 1000    #value in [g]
         self.ACC0_Z = self.ACC0_Z / 1000    #value in [g]
         
-        self.GYRO_X = self.GYRO_X * np.pi / 180 #value in [radians per second]
-        self.GYRO_Y = self.GYRO_Y * np.pi / 180 #value in [radians per second]
-        self.GYRO_Z = self.GYRO_Z * np.pi / 180 #value in [radians per second]
+        self.GYRO_X = (self.GYRO_X / 1000) * (np.pi / 180) #value in [radians per second]
+        self.GYRO_Y = (self.GYRO_Y / 1000) * (np.pi / 180) #value in [radians per second]
+        self.GYRO_Z = (self.GYRO_Z / 1000) * (np.pi / 180) #value in [radians per second]
         
         self.ACC1_X = self.ACC0_X / 1000    #value in [g]
         self.ACC1_Y = self.ACC0_Y / 1000    #value in [g]
