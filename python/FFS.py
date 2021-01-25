@@ -74,6 +74,8 @@ class FFS:
         unit_vectors = np.eye(3)
         vec_zeros = np.zeros(3)
 
+        colors_xyz = ['r', 'g', 'b']
+
         while True:
             self.lock.acquire()
             gyroscope = self.gyroscope
@@ -82,12 +84,13 @@ class FFS:
             ax.clear()
 
             # note: calculate  rotation matrix
-            R = self._Rz(gyroscope[0]) * self._Ry(gyroscope[1]) * self._Rx(gyroscope[2])
+            R = np.matmul(np.matmul(self._Rz(gyroscope[0]), self._Ry(gyroscope[1])), self._Rz(gyroscope[2]))
+
             ax.quiver(vec_zeros, vec_zeros, vec_zeros, unit_vectors[0], unit_vectors[1], unit_vectors[2], color='grey',
                       linestyle='--')
-            for u_vec in unit_vectors:
-                rotated_vec = R * np.array([u_vec]).T
-                ax.quiver(0, 0, 0, rotated_vec[0], rotated_vec[1], rotated_vec[2], color='red')
+            for u_vec, color_ in zip(unit_vectors, colors_xyz):
+                rotated_vec = np.matmul(R, np.array([u_vec]).T)
+                ax.quiver(0, 0, 0, rotated_vec[0], rotated_vec[1], rotated_vec[2], color=color_)
 
             ax.set_xlim([-1, 1])
             ax.set_ylim([-1, 1])
