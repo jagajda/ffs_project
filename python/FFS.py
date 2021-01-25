@@ -6,6 +6,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import time
 import math as m
 import numpy as np
+import random
 
 import magdwickahrs as mdw
 
@@ -23,7 +24,9 @@ class FFS:
         self.data_read = data_read.DataRead()
         self.data_read.calculate_beta_zeta()
         self.sleep = sleep
-        self.filtr = mdw.MadgwickAHRS(sampleperiod=sleep, quaternion=Quaternion(1, 0, 0, 0), beta=self.data_read.beta, zeta=self.data_read.zeta)
+        self.filtr = mdw.MadgwickAHRS(sampleperiod=sleep, quaternion=Quaternion(1, 0, 0, 0), beta=self.data_read.beta,
+                                      zeta=self.data_read.zeta)
+        self.fig = plt.figure(figsize=plt.figaspect(2.))
 
         self.start_acquisition()
         self.start_filtration()
@@ -62,25 +65,20 @@ class FFS:
         self.visualizationThread = threading.Thread(target=self.visualization)
         self.visualizationThread.start()
         logging.info('Visualizations started')
+        plt.show()
 
     def visualization(self):
+        ax_1 = self.fig.add_subplot(211, projection='3d')
+        ax_2 = self.fig.add_subplot(212)
+        self.start_plottinng_position(self.fig, ax_1)
+        self.start_plotting_angles(self.fig, ax_2)
 
-        self.start_plottinng_position()
-        self.start_plotting_angles()
+    def start_plottinng_position(self, fig, ax):
+        self.plotThread = _thread.start_new_thread(self.plotting, (fig, ax))
 
-
-    def start_plottinng_position(self):
-        fig = plt.figure()
-        ax_1 = fig.add_subplot(111, projection='3d')
-        self.plotThread = _thread.start_new_thread(self.plotting, (fig, ax_1))
-        plt.show()
-
-    def start_plotting_angles(self):
-        fig, ax = plt.subplot()
+    def start_plotting_angles(self, fig, ax):
         start_time = time.time()
-
         self.plotThread_2 = _thread.start_new_thread(self.plotting_angles_time, (fig, ax, start_time))
-        plt.show()
 
     def plotting(self, fig, ax):
         logging.info('Plotting started')
@@ -95,7 +93,6 @@ class FFS:
             self.lock.release()
             logging.debug(gyroscope)
             ax.clear()
-
             # note: calculate  rotation matrix
             R = np.matmul(np.matmul(self._Rz(gyroscope[0]), self._Ry(gyroscope[1])), self._Rz(gyroscope[2]))
 
@@ -112,23 +109,35 @@ class FFS:
             ax.set_yticks([-1, 0, 1])
             ax.set_xticks([-1, 0, 1])
 
+            ax.legend(['unit vetors', 'x', 'y', 'z'], fontsize='x-small')
             fig.canvas.draw_idle()  # use draw_idle instead of draw
             time.sleep(self.sleep)
 
     def plotting_angles_time(self, fig, ax, started_time):
         colors_xyz = ['r', 'g', 'b']
-
+        prev_elapsed_time = 0
+        prev_gyro = [0, 0, 0]
         while True:
             self.lock.acquire()
             gyroscope = self.gyroscope
             self.lock.release()
             logging.debug(gyroscope)
-            ax.clear()
 
-            elapsed_time = started_time - time.time()
-            for gyro_ax, color_ in zip(gyroscope, colors_xyz):
-                ax.plot(elapsed_time, np.degrees(gyro_ax), '.-', color=color_)
+            elapsed_time = time.time() - started_time
+            for gyro_ax, prev_gyro_ax, color_ in zip(gyroscope, prev_gyro, colors_xyz):
+                ax.plot([prev_elapsed_time, elapsed_time], [np.degrees(prev_gyro_ax), np.degrees(gyro_ax)],
+                        '.-', color=color_, linewidth=1, markersize=1)
 
+            prev_elapsed_time = elapsed_time
+            prev_gyro = gyroscope
+
+
+            ax.set_title("Angles in time")
+            ax.set_xlabel("Time [s]")
+            ax.set_ylabel("Angles [deg]")
+
+            ax.grid(True)
+            ax.legend(["roll", "pitch", 'yaw'], loc=3, fontsize='x-small')
             fig.canvas.draw_idle()  # use draw_idle instead of draw
             time.sleep(self.sleep)
 
